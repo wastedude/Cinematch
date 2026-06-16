@@ -9,6 +9,7 @@ import { WaitingRoom } from '@/components/WaitingRoom'
 import { CardStack } from '@/components/CardStack'
 import { MatchOverlay } from '@/components/MatchOverlay'
 import { MatchesList } from '@/components/MatchesList'
+import type { Room } from '@/types'
 
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>()
@@ -16,27 +17,28 @@ export default function RoomPage() {
     useRoom(code)
   const { matches, latestMatch, clearLatest } = useMatches(room?.id ?? '')
 
-  // Prevent double deck-build calls when both clients observe the same transition
+  // Prevent both clients from racing to build the deck simultaneously
   const deckBuildAttempted = useRef(false)
 
-  // Track whether this device has submitted genres (genre pick is one-time)
   const [genresSubmitted, setGenresSubmitted] = useState(false)
 
-  // When the realtime subscription updates the room, check if we should trigger deck build
+  // Watch for both genres being present — trigger deck build with fresh snapshot
   useEffect(() => {
-    if (!room || deckBuildAttempted.current) return
-    if (room.genres_a && room.genres_b && room.phase === 'waiting') {
-      deckBuildAttempted.current = true
-      triggerDeckBuild().catch(console.error)
-    }
+    if (!room) return
+    if (deckBuildAttempted.current) return
+    if (!room.genres_a || !room.genres_b) return
+    // Phase can be 'waiting' (set by submitGenres) — both clients will see this update
+    if (room.phase !== 'waiting') return
+
+    deckBuildAttempted.current = true
+    // Pass the fresh room snapshot directly to avoid stale closure
+    triggerDeckBuild(room).catch(console.error)
   }, [room, triggerDeckBuild])
 
-  // Transition local phase to 'done' when all cards are swiped
   function handleSwipeComplete() {
     setPhaseLocally('done')
   }
 
-  // ── Loading ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center">
@@ -50,7 +52,6 @@ export default function RoomPage() {
     )
   }
 
-  // ── Error ──────────────────────────────────────────────────────────────────
   if (error || !room) {
     return (
       <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4 text-center">
@@ -78,7 +79,6 @@ export default function RoomPage() {
     try {
       await submitGenres(genreIds)
       setGenresSubmitted(true)
-      // Optimistically move to waiting locally; server will broadcast the update
       setPhaseLocally('waiting')
     } catch (e) {
       console.error('Failed to submit genres:', e)
@@ -114,8 +114,6 @@ export default function RoomPage() {
           deviceId={deviceId}
           onComplete={handleSwipeComplete}
         />
-
-        {/* Real-time match overlay */}
         <MatchOverlay match={latestMatch} onDismiss={clearLatest} />
       </div>
     )

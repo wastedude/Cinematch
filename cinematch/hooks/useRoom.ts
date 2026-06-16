@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { getDeviceId } from '@/lib/device'
 import type { Room, RoomPhase } from '@/types'
@@ -10,10 +10,9 @@ interface UseRoomReturn {
   loading: boolean
   error: string | null
   deviceId: string | null
-  /** Which slot this device is (A = first joiner, B = second joiner) */
   slot: 'A' | 'B' | null
   submitGenres: (genres: string[]) => Promise<void>
-  triggerDeckBuild: () => Promise<void>
+  triggerDeckBuild: (roomSnapshot: Room) => Promise<void>
   setPhaseLocally: (phase: RoomPhase) => void
 }
 
@@ -23,8 +22,13 @@ export function useRoom(code: string): UseRoomReturn {
   const [error, setError] = useState<string | null>(null)
   const [deviceId, setDeviceId] = useState<string | null>(null)
   const [slot, setSlot] = useState<'A' | 'B' | null>(null)
+  // Keep a ref so callbacks always see the latest room without stale closures
+  const roomRef = useRef<Room | null>(null)
 
-  // ── Initial load + realtime subscription ──────────────────────────────────
+  useEffect(() => {
+    roomRef.current = room
+  }, [room])
+
   useEffect(() => {
     const supabase = createClient()
     const id = getDeviceId()
@@ -33,7 +37,6 @@ export function useRoom(code: string): UseRoomReturn {
     async function init() {
       setLoading(true)
 
-      // 1. Fetch room by code
       const res = await fetch(`/api/rooms?code=${code}`)
       if (!res.ok) {
         setError('Room not found')
@@ -42,13 +45,12 @@ export function useRoom(code: string): UseRoomReturn {
       }
       const roomData: Room = await res.json()
       setRoom(roomData)
+      roomRef.current = roomData
 
-      // 2. Register as a participant (idempotent)
       await supabase
         .from('participants')
         .upsert({ room_id: roomData.id, device_id: id }, { onConflict: 'room_id,device_id' })
 
-      // 3. Determine slot (A = first registered, B = second)
       const { data: participants } = await supabase
         .from('participants')
         .select('device_id, joined_at')
@@ -58,8 +60,6 @@ export function useRoom(code: string): UseRoomReturn {
       if (participants) {
         const myIndex = participants.findIndex((p) => p.device_id === id)
         setSlot(myIndex === 0 ? 'A' : 'B')
-
-        // If room is full (3rd+ device), we still allow read-only view
       }
 
       setLoading(false)
@@ -70,14 +70,15 @@ export function useRoom(code: string): UseRoomReturn {
       setLoading(false)
     })
 
-    // 4. Subscribe to room updates for real-time phase/genre transitions
     const channel = supabase
       .channel(`room:${code}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `code=eq.${code}` },
         (payload) => {
-          setRoom(payload.new as Room)
+          const updated = payload.new as Room
+          setRoom(updated)
+          roomRef.current = updated
         }
       )
       .subscribe()
@@ -87,45 +88,46 @@ export function useRoom(code: string): UseRoomReturn {
     }
   }, [code])
 
-  // ── Submit genre selection ─────────────────────────────────────────────────
+  // Submit genres AND transition the room phase to 'waiting' atomically
   const submitGenres = useCallback(
     async (genres: string[]) => {
-      if (!room || !slot) return
+      const current = roomRef.current
+      if (!current || !slot) return
       const supabase = createClient()
 
       const field = slot === 'A' ? 'genres_a' : 'genres_b'
+
+      // Also set phase to 'waiting' so the realtime listener on the other
+      // client can detect that this participant has submitted
       const { error: updateError } = await supabase
         .from('rooms')
-        .update({ [field]: genres })
-        .eq('id', room.id)
+        .update({ [field]: genres, phase: 'waiting' })
+        .eq('id', current.id)
 
       if (updateError) throw new Error(updateError.message)
     },
-    [room, slot]
+    [slot]
   )
 
-  // ── Trigger deck build (called when both genres are in) ───────────────────
-  const triggerDeckBuild = useCallback(async () => {
-    if (!room) return
-
-    const latestRoom = room
-    if (!latestRoom.genres_a || !latestRoom.genres_b) return
+  // Accept a fresh room snapshot to avoid stale-closure issues
+  const triggerDeckBuild = useCallback(async (roomSnapshot: Room) => {
+    if (!roomSnapshot.genres_a || !roomSnapshot.genres_b) return
 
     const res = await fetch('/api/deck', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        roomId: latestRoom.id,
-        genresA: latestRoom.genres_a,
-        genresB: latestRoom.genres_b,
+        roomId: roomSnapshot.id,
+        genresA: roomSnapshot.genres_a,
+        genresB: roomSnapshot.genres_b,
       }),
     })
 
     if (!res.ok) {
-      const { error: msg } = await res.json()
-      throw new Error(msg ?? 'Deck build failed')
+      const body = await res.json().catch(() => ({}))
+      throw new Error(body.error ?? 'Deck build failed')
     }
-  }, [room])
+  }, [])
 
   const setPhaseLocally = useCallback((phase: RoomPhase) => {
     setRoom((prev) => (prev ? { ...prev, phase } : prev))
