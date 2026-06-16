@@ -1,6 +1,6 @@
 {
-  "name": "CineMatch",
-  "short_name": "CineMatch",
+  "name": "FlixMatch",
+  "short_name": "FlixMatch",
   "description": "Tinder for movies — swipe with a friend, find your match",
   "start_url": "/",
   "display": "standalone",

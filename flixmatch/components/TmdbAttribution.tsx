@@ -14,7 +14,7 @@ export function TmdbAttribution() {
       <img
         src="/tmdb-logo.svg"
         alt="The Movie Database (TMDB) logo"
-        height={18}
+        height={12}
         style={{ display: 'inline-block' }}
       />
       <p className="text-center" style={{ fontSize: 11, color: 'var(--app-text-2)' }}>
