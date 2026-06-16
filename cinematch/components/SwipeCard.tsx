@@ -80,6 +80,7 @@ export function SwipeCard({ movie, onSwipe, isTop, stackIndex }: SwipeCardProps)
             sizes="320px"
             className="object-cover"
             priority={stackIndex === 0}
+            loading={stackIndex === 0 ? 'eager' : 'lazy'}
             draggable={false}
           />
         </div>

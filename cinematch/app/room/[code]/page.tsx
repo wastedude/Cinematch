@@ -7,30 +7,16 @@ import { useMatches } from '@/hooks/useMatches'
 import { GenrePicker } from '@/components/GenrePicker'
 import { WaitingRoom } from '@/components/WaitingRoom'
 import { CardStack } from '@/components/CardStack'
-import { MatchOverlay } from '@/components/MatchOverlay'
 import { MatchesList } from '@/components/MatchesList'
 
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>()
   const { room, loading, error, deviceId, slot, submitGenres, triggerDeckBuild, setPhaseLocally } =
     useRoom(code)
-  const { matches, latestMatch, clearLatest } = useMatches(room?.id ?? '')
+  const { matches } = useMatches(room?.id ?? '')
 
   const deckBuildAttempted = useRef(false)
   const [genresSubmitted, setGenresSubmitted] = useState(false)
-
-  // Debug: log every room state change so we can trace what's happening
-  useEffect(() => {
-    if (!room) return
-    console.log('[CineMatch] room updated:', {
-      phase: room.phase,
-      genres_a: room.genres_a,
-      genres_b: room.genres_b,
-      slot,
-      genresSubmitted,
-      deckBuildAttempted: deckBuildAttempted.current,
-    })
-  }, [room, slot, genresSubmitted])
 
   useEffect(() => {
     if (!room) return
@@ -38,11 +24,8 @@ export default function RoomPage() {
     if (!room.genres_a || !room.genres_b) return
     if (room.phase !== 'waiting') return
 
-    console.log('[CineMatch] both genres ready — triggering deck build')
     deckBuildAttempted.current = true
-    triggerDeckBuild(room)
-      .then(() => console.log('[CineMatch] deck build triggered OK'))
-      .catch((e) => console.error('[CineMatch] deck build failed:', e))
+    triggerDeckBuild(room).catch(console.error)
   }, [room, triggerDeckBuild])
 
   function handleSwipeComplete() {
@@ -85,20 +68,18 @@ export default function RoomPage() {
   const bothGenresReady = !!(room.genres_a && room.genres_b)
 
   async function handleGenreSubmit(genreIds: string[]) {
-    console.log('[CineMatch] submitting genres:', genreIds, 'slot:', slot)
     try {
       await submitGenres(genreIds)
-      console.log('[CineMatch] genres submitted OK')
       setGenresSubmitted(true)
     } catch (e) {
-      console.error('[CineMatch] genre submit failed:', e)
+      console.error('Failed to submit genres:', e)
     }
   }
 
-  // Show genre picker if THIS device hasn't submitted yet —
-  // regardless of room phase (the other device may have already set it to 'waiting')
+  // Show genre picker if this device hasn't submitted yet.
+  // Check both local state AND the DB value — handles the case where
+  // the partner already submitted and set phase to 'waiting' before this device joined.
   if (!genresSubmitted && slot !== null) {
-    // Also check DB: if this device's slot already has genres saved, skip picker
     const myGenres = slot === 'A' ? room.genres_a : room.genres_b
     if (!myGenres) {
       return (
@@ -127,7 +108,7 @@ export default function RoomPage() {
           deviceId={deviceId}
           onComplete={handleSwipeComplete}
         />
-        <MatchOverlay match={latestMatch} onDismiss={clearLatest} />
+        {/* MatchOverlay removed — matches are shown at the end after the full deck is swiped */}
       </div>
     )
   }
