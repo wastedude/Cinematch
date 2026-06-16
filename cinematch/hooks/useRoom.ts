@@ -75,8 +75,12 @@ export function useRoom(code: string): UseRoomReturn {
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'rooms', filter: `code=eq.${code}` },
-        (payload) => {
-          const updated = payload.new as Room
+        async () => {
+          // Re-fetch the full room instead of using the realtime payload —
+          // without REPLICA IDENTITY FULL the payload has null for unchanged columns.
+          const res = await fetch(`/api/rooms?code=${code}`)
+          if (!res.ok) return
+          const updated: Room = await res.json()
           setRoom(updated)
           roomRef.current = updated
         }
