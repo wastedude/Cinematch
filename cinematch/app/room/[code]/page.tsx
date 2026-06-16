@@ -90,18 +90,23 @@ export default function RoomPage() {
       await submitGenres(genreIds)
       console.log('[CineMatch] genres submitted OK')
       setGenresSubmitted(true)
-      setPhaseLocally('waiting')
     } catch (e) {
       console.error('[CineMatch] genre submit failed:', e)
     }
   }
 
-  if (room.phase === 'genre_pick' && !genresSubmitted) {
-    return (
-      <div className="flex-1 flex flex-col items-center justify-center py-8">
-        <GenrePicker onSubmit={handleGenreSubmit} />
-      </div>
-    )
+  // Show genre picker if THIS device hasn't submitted yet —
+  // regardless of room phase (the other device may have already set it to 'waiting')
+  if (!genresSubmitted && slot !== null) {
+    // Also check DB: if this device's slot already has genres saved, skip picker
+    const myGenres = slot === 'A' ? room.genres_a : room.genres_b
+    if (!myGenres) {
+      return (
+        <div className="flex-1 flex flex-col items-center justify-center py-8">
+          <GenrePicker onSubmit={handleGenreSubmit} />
+        </div>
+      )
+    }
   }
 
   if (room.phase === 'genre_pick' || room.phase === 'waiting') {
