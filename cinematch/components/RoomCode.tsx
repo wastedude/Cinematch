@@ -12,7 +12,7 @@ export function RoomCode({ code }: RoomCodeProps) {
   const shareUrl =
     typeof window !== 'undefined'
       ? `${window.location.origin}/room/${code}`
-      : `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://cinematch.vercel.app'}/room/${code}`
+      : `${process.env.NEXT_PUBLIC_BASE_URL ?? 'https://flixmatch.vercel.app'}/room/${code}`
 
   async function copyLink() {
     try {
