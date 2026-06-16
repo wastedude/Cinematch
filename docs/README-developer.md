@@ -23,7 +23,7 @@
 ## Project Structure
 
 ```
-cinematch/
+flixmatch/
 ├── app/
 │   ├── layout.tsx                  # Root layout: fonts, header, TMDB attribution
 │   ├── page.tsx                    # Landing page: create or join room
@@ -70,14 +70,14 @@ cinematch/
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/your-username/cinematch.git
-cd cinematch
+git clone https://github.com/your-username/flixmatch.git
+cd flixmatch
 ```
 
 ### 2. Install dependencies
 
 ```bash
-cd cinematch
+cd flixmatch
 npm install
 ```
 
@@ -194,7 +194,7 @@ create policy "public insert matches" on matches for insert with check (true);
 
 1. Push your repo to GitHub
 2. Import the project at [vercel.com/new](https://vercel.com/new)
-3. **Important:** Set **Root Directory** to `cinematch` in the project settings
+3. **Important:** Set **Root Directory** to `flixmatch` in the project settings
 4. Add all four environment variables under **Settings → Environment Variables**:
    - `TMDB_API_KEY`
    - `NEXT_PUBLIC_SUPABASE_URL`
@@ -234,7 +234,7 @@ All TMDB calls are proxied through server-side API routes. The `TMDB_API_KEY` ne
 
 ## Key Design Decisions
 
-**Anonymous identity** — No auth, no login. Each device gets a UUID stored in `localStorage` (`cinematch_device_id`). This is the sole identity mechanism.
+**Anonymous identity** — No auth, no login. Each device gets a UUID stored in `localStorage` (`flixmatch_device_id`). This is the sole identity mechanism.
 
 **Deck immutability** — Once `rooms.deck` is set and phase is `swiping`, the deck never changes. Both clients read from the same frozen array.
 

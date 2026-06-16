@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-const STORAGE_KEY = 'cinematch_theme'
+const STORAGE_KEY = 'flixmatch_theme'
 
 export function ThemeToggle() {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark')

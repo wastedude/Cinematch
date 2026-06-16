@@ -47,7 +47,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{
             __html: `
               try {
-                var t = localStorage.getItem('cinematch_theme');
+                var t = localStorage.getItem('flixmatch_theme');
                 if (t === 'light' || t === 'dark') {
                   document.documentElement.setAttribute('data-theme', t);
                 }

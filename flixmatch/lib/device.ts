@@ -4,7 +4,7 @@
  * This is used instead of authentication.
  */
 
-const STORAGE_KEY = 'cinematch_device_id'
+const STORAGE_KEY = 'flixmatch_device_id'
 
 export function getDeviceId(): string {
   let id = localStorage.getItem(STORAGE_KEY)

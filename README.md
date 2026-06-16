@@ -16,8 +16,8 @@ Two people join an anonymous room, each pick genres, swipe through a shared 15-m
 ## Quick Start (Developers)
 
 ```bash
-git clone https://github.com/your-username/cinematch.git
-cd cinematch/cinematch
+git clone https://github.com/your-username/flixmatch.git
+cd flixmatch/flixmatch
 npm install
 cp .env.example .env.local   # fill in your API keys
 npm run dev

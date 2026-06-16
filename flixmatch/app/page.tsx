@@ -46,7 +46,7 @@ export default function LandingPage() {
           className="font-display text-7xl leading-none"
           style={{ color: 'var(--app-accent)' }}
         >
-          CineMatch
+          FlixMatch
         </h1>
         <p className="font-body text-base max-w-xs" style={{ color: 'var(--app-text-2)' }}>
           Swipe movies with a friend. When you both like the same film — it&apos;s a match.
