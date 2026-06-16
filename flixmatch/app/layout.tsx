@@ -20,13 +20,13 @@ const manrope = Manrope({
 
 // ── Metadata ───────────────────────────────────────────────────────────────
 export const metadata: Metadata = {
-  title: 'CineMatch — Swipe movies with a friend',
+  title: 'FlixMatch — Swipe movies with a friend',
   description: 'Tinder for movies. Swipe together, find your match.',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'CineMatch',
+    title: 'FlixMatch',
   },
 }
 
@@ -67,9 +67,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             href="/"
             className="font-display text-2xl leading-none"
             style={{ color: 'var(--app-accent)', textDecoration: 'none' }}
-            aria-label="CineMatch — home"
+            aria-label="FlixMatch — home"
           >
-            CineMatch
+            FlixMatch
           </a>
           <ThemeToggle />
         </header>
