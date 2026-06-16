@@ -9,7 +9,6 @@ import { WaitingRoom } from '@/components/WaitingRoom'
 import { CardStack } from '@/components/CardStack'
 import { MatchOverlay } from '@/components/MatchOverlay'
 import { MatchesList } from '@/components/MatchesList'
-import type { Room } from '@/types'
 
 export default function RoomPage() {
   const { code } = useParams<{ code: string }>()
@@ -17,22 +16,33 @@ export default function RoomPage() {
     useRoom(code)
   const { matches, latestMatch, clearLatest } = useMatches(room?.id ?? '')
 
-  // Prevent both clients from racing to build the deck simultaneously
   const deckBuildAttempted = useRef(false)
-
   const [genresSubmitted, setGenresSubmitted] = useState(false)
 
-  // Watch for both genres being present — trigger deck build with fresh snapshot
+  // Debug: log every room state change so we can trace what's happening
+  useEffect(() => {
+    if (!room) return
+    console.log('[CineMatch] room updated:', {
+      phase: room.phase,
+      genres_a: room.genres_a,
+      genres_b: room.genres_b,
+      slot,
+      genresSubmitted,
+      deckBuildAttempted: deckBuildAttempted.current,
+    })
+  }, [room, slot, genresSubmitted])
+
   useEffect(() => {
     if (!room) return
     if (deckBuildAttempted.current) return
     if (!room.genres_a || !room.genres_b) return
-    // Phase can be 'waiting' (set by submitGenres) — both clients will see this update
     if (room.phase !== 'waiting') return
 
+    console.log('[CineMatch] both genres ready — triggering deck build')
     deckBuildAttempted.current = true
-    // Pass the fresh room snapshot directly to avoid stale closure
-    triggerDeckBuild(room).catch(console.error)
+    triggerDeckBuild(room)
+      .then(() => console.log('[CineMatch] deck build triggered OK'))
+      .catch((e) => console.error('[CineMatch] deck build failed:', e))
   }, [room, triggerDeckBuild])
 
   function handleSwipeComplete() {
@@ -74,14 +84,15 @@ export default function RoomPage() {
 
   const bothGenresReady = !!(room.genres_a && room.genres_b)
 
-  // ── Genre Pick Phase ───────────────────────────────────────────────────────
   async function handleGenreSubmit(genreIds: string[]) {
+    console.log('[CineMatch] submitting genres:', genreIds, 'slot:', slot)
     try {
       await submitGenres(genreIds)
+      console.log('[CineMatch] genres submitted OK')
       setGenresSubmitted(true)
       setPhaseLocally('waiting')
     } catch (e) {
-      console.error('Failed to submit genres:', e)
+      console.error('[CineMatch] genre submit failed:', e)
     }
   }
 
@@ -93,7 +104,6 @@ export default function RoomPage() {
     )
   }
 
-  // ── Waiting Phase ──────────────────────────────────────────────────────────
   if (room.phase === 'genre_pick' || room.phase === 'waiting') {
     return (
       <div className="flex-1 flex flex-col items-center justify-center">
@@ -102,10 +112,8 @@ export default function RoomPage() {
     )
   }
 
-  // ── Swiping Phase ──────────────────────────────────────────────────────────
   if (room.phase === 'swiping') {
     if (!deviceId) return null
-
     return (
       <div className="flex-1 flex flex-col items-center justify-center py-6">
         <CardStack
@@ -119,7 +127,6 @@ export default function RoomPage() {
     )
   }
 
-  // ── Done Phase ─────────────────────────────────────────────────────────────
   return (
     <div className="flex-1 flex flex-col">
       <MatchesList matches={matches} />
