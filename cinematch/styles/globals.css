@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Theme tokens ─────────────────────────────────────────────────────────── */
+:root[data-theme="dark"] {
+  --app-bg: #16151C;
+  --app-surface: #211F28;
+  --app-accent: #F2B84B;
+  --app-on-accent: #16151C;
+  --app-text: #F5F0E8;
+  --app-text-2: #9C98A3;
+  --app-pass: #E2575A;
+  --app-border: rgba(255, 255, 255, 0.08);
+  --app-card-poster-bg: #2B2820;
+}
+
+:root[data-theme="light"] {
+  --app-bg: #FAF5EC;
+  --app-surface: #FFFFFF;
+  --app-accent: #C97D1F;
+  --app-on-accent: #2A1A05;
+  --app-text: #241F18;
+  --app-text-2: #8A8074;
+  --app-pass: #C2484B;
+  --app-border: rgba(36, 31, 24, 0.08);
+  --app-card-poster-bg: #F1E4CF;
+}
+
+/* ── Base resets ──────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--app-bg);
+  color: var(--app-text);
+  font-family: var(--font-manrope), system-ui, sans-serif;
+  min-height: 100dvh;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Utility aliases ──────────────────────────────────────────────────────── */
+.font-display { font-family: var(--font-bebas), sans-serif; }
+.font-body    { font-family: var(--font-manrope), sans-serif; }
